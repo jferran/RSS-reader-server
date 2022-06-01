@@ -11,6 +11,14 @@ const userSchema = new Schema(
       type: String,
       required: true
     },
+    newsToBeRead: [{
+      type: Schema.Types.ObjectId,
+      ref: "News"
+    }],
+    readNews: [{
+      type: Schema.Types.ObjectId,
+      ref: "News"
+    }]
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`
