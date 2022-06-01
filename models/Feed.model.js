@@ -9,7 +9,12 @@ const feedSchema = new Schema(
             type: String,
             required: true,
             unique: true
-        }
+        },
+        news: [{
+            content: String,
+            guid: String,
+            date: Date
+        }]
     }
 )
 

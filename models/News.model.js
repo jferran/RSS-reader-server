@@ -5,10 +5,15 @@ const newsSchema = new Schema(
         content: {
             type: String
         },
-        feed: [{
+        feed: {
             type: Schema.Types.ObjectId,
             ref: "Feed"
-        }],
+        },
+        news: [{
+            content: String,
+            guid: String,
+            pubDate: Date
+        }]
     }
 )
 
