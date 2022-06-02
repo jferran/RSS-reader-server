@@ -9,14 +9,13 @@ const newsSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Feed"
         },
-        news: [{
-            content: String,
-            guid: String,
-            pubDate: Date
-        }]
+        guid: {
+            type: String,
+            unique: true
+        }
     }
 )
 
 
-const News = model("News", feedSchema)
+const News = model("News", newsSchema)
 module.exports = News
