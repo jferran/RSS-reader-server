@@ -16,19 +16,27 @@ const userSchema = new Schema(
       type: String,
       required: true
     },
+    subscribedFeeds: [{
+      _id: false,
+      feed: {
+        type: Schema.Types.ObjectId,
+        ref: "Feed"
+      }
+    }],
     newsList: [
       {
+        //_id: false,
         entry: {
         type: Schema.Types.ObjectId,
-        ref: "News"
-        }
-      },
-      {
+        ref: "Feed.news"
+        },
         seen: {
-          type: Boolean
+          type: Boolean,
+          default: false
         },
         favorite: {
-          type: Boolean
+          type: Boolean,
+          default: false
         }
       },
     ],

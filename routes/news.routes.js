@@ -1,10 +1,13 @@
+const loadNews = require("../utilities/loadNews");
+
 const router = require("express").Router();
 //const isAuthenticated = require("../middlewares/isAuthenticated")
 
 router.get("/", async (req, res, next) =>{
     try {
-        const response = await Feed.find()
-        updateFeeds()
+        //const response = await News.find()
+        const response = {e: "yo"}
+        loadNews()
         res.json(response)
     } catch (error) {
         next(error)
