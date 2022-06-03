@@ -72,17 +72,47 @@ const updateFeeds = async () =>{
             //2. Our News object, just create a new entry with the ID of our feed
             //await News.create({content: item.content, feed: source._id, guid: item.guid})
            
-            source.news.push({content: item.content, feed: source._id, guid: item.guid})
-            source.markModified('news')
+            //source.news.push({content: item.content, feed: source._id, guid: item.guid})
+            //source.markModified('news')
 
             
 
         })
+
+        try {
+            const news = await News.insertMany(manyNews, {ordered: false}, async function(error, docs) {
+                let insertedDocs;
+                if(error) {
+                    //console.log("el error: ", error.insertedDocs)
+                    insertedDocs=error.insertedDocs
+                }
+                else insertedDocs=docs
+
+                await Feed.findByIdAndUpdate(
+                    source._id, {$addToSet: {news: insertedDocs}}
+                    )
+                
+            })   
+            //Feed.insertMany(manyNews, {ordered: false}, function(error, docs) {})  
+            console.log("Added news:", news)  
+        } catch (error) {
+            
+        }
+        
+
         //https://medium.com/@tayomadein/mongodbs-addtoset-operator-using-mongo-shell-and-mongoose-odm-3edebf2bfd13
-        await Feed.findByIdAndUpdate(
-            source._id, {$addToSet: {news: manyNews}}
-            )
-        // await source.update(
+        //no funciona, duplica
+        // await Feed.findByIdAndUpdate(
+        //     source._id, {$addToSet: {news: manyNews}}
+        //     )
+
+        //https://stackoverflow.com/questions/45519237/how-to-update-or-insert-many-objects-in-an-array-subdocument-in-mongodb
+
+            //await source.insertMany(manyNews, {ordered: false}, function(error, docs) {})
+            //foundThing = await Feed.findById(source._id)//.insertMany(manyNews, {ordered: false}, function(error, docs) {})
+            //console.log("foundThing")
+
+            // await source.update(
         //     {$push: {news: manyNews}}
         // )
 

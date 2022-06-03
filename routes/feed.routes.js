@@ -1,5 +1,5 @@
 const Feed = require("../models/Feed.model");
-const updateFeeds = require("../utilities/fetchRSS")
+const updateFeeds = require("../utilities/updateFeeds")
 const router = require("express").Router();
 //const isAuthenticated = require("../middlewares/isAuthenticated")
 

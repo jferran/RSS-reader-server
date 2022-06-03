@@ -12,7 +12,7 @@ const feedSchema = new Schema(
         },
         news: [{
             //_id: false,
-            content: String,
+            //content: String,
             guid: {
                 type: String,
                 required: true,

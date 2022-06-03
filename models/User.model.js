@@ -17,7 +17,11 @@ const userSchema = new Schema(
       required: true
     },
     subscribedFeeds: [{
-      _id: false,
+      //_id: false,
+      _id: {
+        type: Schema.Types.ObjectId,
+        ref: "Feed"
+      },
       feed: {
         type: Schema.Types.ObjectId,
         ref: "Feed"
@@ -26,6 +30,10 @@ const userSchema = new Schema(
     newsList: [
       {
         //_id: false,
+        _id: {
+          type: Schema.Types.ObjectId,
+          ref: "Feed.news"
+          },
         entry: {
         type: Schema.Types.ObjectId,
         ref: "Feed.news"
@@ -40,14 +48,6 @@ const userSchema = new Schema(
         }
       },
     ],
-    newsToBeRead: [{
-      type: Schema.Types.ObjectId,
-      ref: "News"
-    }],
-    readNews: [{
-      type: Schema.Types.ObjectId,
-      ref: "News"
-    }]
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

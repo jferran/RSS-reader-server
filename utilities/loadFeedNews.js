@@ -33,8 +33,7 @@ const loadNews = async () =>{
 
         })
         try {
-            News.insertMany(manyNews, {ordered: false}, function(error, docs) {})   
-            //Feed.insertMany(manyNews, {ordered: false}, function(error, docs) {})    
+            News.insertMany(manyNews, {ordered: false}, function(error, docs) {})    
         } catch (error) {
             
         }
