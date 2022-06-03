@@ -10,23 +10,18 @@ const feedSchema = new Schema(
             required: true,
             unique: true
         },
+        numberOfEntriesInXml: {type: Number},
         news: [{
-            //_id: false,
-            //content: String,
-            guid: {
-                type: String,
-                required: true,
-                //unique: true,
-            },
-            pubDate: Date
-        }],
-        newsFromOtherModel: [{
+            // _id: {
+            //     type: Schema.Types.ObjectId,
+            //     ref: "News"
+            // },
             type: Schema.Types.ObjectId,
             ref: "News"
         }],
     }
 )
-feedSchema.index({ guid: 1}, { unique: true });
+//feedSchema.index({ guid: 1}, { unique: true });
 
 
 const Feed = model("Feed", feedSchema)

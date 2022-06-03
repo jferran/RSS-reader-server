@@ -15,7 +15,8 @@ const newsSchema = new Schema(
         
         content: {
             type: String
-        }
+        },
+        pubDate: Date
         
     }
 )

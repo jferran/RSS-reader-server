@@ -15,6 +15,7 @@ router.get("/", async (req, res, next) =>{
 
 router.post("/", async (req, res, next) => {
     const { name, sourceUrl } = req.body
+    console.log("name: ", name, "sourceUrl: ", sourceUrl)
     try {
         const response = await Feed.create({name, sourceUrl})
         res.json(response)
@@ -26,7 +27,8 @@ router.post("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
     const { id } = req.params
     try {
-        const response = await Feed.findById(id)
+        const response = await Feed.findById(id).populate('news')
+        //const response = await Feed.findById(id).populate('news._id')//.explain()
 
         res.json(response)
     } catch (error) {

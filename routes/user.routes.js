@@ -44,7 +44,11 @@ router.get("/:userID/feed/:id/subscribe", async (req, res, next) => {
     try {
         //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {feed: id}}}).populate('subscribedFeeds.feed')
         //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds.feed')
-        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
+        
+        //we have to decide, if we want _id or feed for subscribed feed, probably just _id
+        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
+        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id}}}).populate('subscribedFeeds._id')
+        //const test = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: {}}})
         //.populate('subscribedFeeds.feed', 'name')
 
         res.json(response)

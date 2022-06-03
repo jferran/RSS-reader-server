@@ -16,6 +16,7 @@ const updateFeeds = async () => {
         content: item.content,
         feed: source._id,
         guid: item.guid,
+        pubDate: item.pubDate
       });
     });
 
@@ -29,7 +30,7 @@ const updateFeeds = async () => {
           else insertedDocs = docs;
 
           await Feed.findByIdAndUpdate(source._id, {
-            $addToSet: { news: insertedDocs },
+            $addToSet: { news: insertedDocs }, numberOfEntriesInXml: manyNews.length
           });
         }
       );
