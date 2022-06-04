@@ -46,16 +46,14 @@ router.get("/:userID/feed/:id/subscribe", async (req, res, next) => {
     const { userID, id } = req.params
     //const { userID } = req.body
     try {
-        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {feed: id}}}).populate('subscribedFeeds.feed')
-        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds.feed')
-        
-        //we have to decide, if we want _id or feed for subscribed feed, probably just _id
-        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
         const news = await FeedModel.findById(id).select('news')
         newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
         //console.log("arrayofobj:", newsArrayOfObjects)
-        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id}}, $addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
-        //const test = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: {}}})
+
+        //not working in one line, so we make 2 queries
+        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id, newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
+        const response2 = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
         //.populate('subscribedFeeds.feed', 'name')
 
         res.json(response)
@@ -77,14 +75,91 @@ router.get("/:userID/feed/:id/unsubscribe", async (req, res, next) => {
     }
 })
 
-//refresh route
+//refresh news route
+router.get("/:userID/news/refresh", async (req, res, next) => {
+    const { userID } = req.params
+    try {
+        
+        const subscriptions = await UserModel.findById(userID).select('subscribedFeeds').lean()
+        let newNews = []
+        console.log("subscriptions", subscriptions)
+        subscriptions.subscribedFeeds.forEach(async (subscription) => {
+            const news = await FeedModel.findById(subscription._id).select('news').lean()
+            const newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
+            await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+        })
+        
+        //const news = await FeedModel.findById(id).select('news')
+        
+        //console.log("arrayofobj:", newsArrayOfObjects)
+        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+        
+        //const test = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: {}}})
+        //.populate('subscribedFeeds.feed', 'name')
+
+        res.json("Refreshed")
+    } catch (error) {
+        next(error)
+    }
+
+})
 
 //mark as read
+router.get("/:userID/news/:id/markAsRead", async (req, res, next) => {
+    const { userID, id } = req.params
+    //const { userID } = req.body
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "newsList._id": id,
+              },
+              {
+                  $set: {
+                      'newsList.$.seen': true
+                  }
+              }
+        )
+
+        res.json(user)
+    } catch (error) {
+        next(error)
+    }
+})
 
 //mark as favourite
+router.get("/userID/news/:id/markAsFavourite"), async (req, res, next) => {
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "newsList._id": id,
+              },
+              {
+                  $set: {
+                      'newsList.$.favorite': true
+                  }
+              }
+        )
+
+        res.json(user)
+    } catch (error) {
+        next(error)
+    }
+}
+
+
+
+
 
 //comment route
-
+router.get("/userID/news/:id/comment"), async (req, res, next) => {
+    try {
+        
+    } catch (error) {
+        
+    }
+}
 
 
 module.exports = router;
