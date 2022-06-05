@@ -264,22 +264,42 @@ router.post("/:userID/news/:id/comment", async (req, res, next) => {
 })
 
 //edit comment route
-router.post("/userID/news/:id/comment/edit", async (req, res, next) => {
+router.post("/:userID/comments/:id/edit", async (req, res, next) => {
+    const { userID, id } = req.params
+    const { comment } = req.body
+    console.log(userID, id, comment)
     try {
-        
+        const myComment = await CommentModel.findOneAndUpdate({_id: id, user:userID}, {comment: comment})
+        res.json(myComment)
     } catch (error) {
-        
+        next(error)
     }
 })
 
 //delete comment route
-router.get("/userID/news/:id/comment/delete", async (req, res, next) => {
+router.delete("/:userID/comments/:id", async (req, res, next) => {
+    const { userID, id } = req.params
     try {
+        const myComment = await CommentModel.findOneAndDelete({_id: id, user: userID}).populate('news')
+        const user = await UserModel.findByIdAndUpdate(userID, {$pull: {comments: myComment._id}})
+        const news = await NewsModel.findByIdAndUpdate(myComment.news._id, {$pull: {comments: myComment._id}})
         
+        res.json(myComment)
     } catch (error) {
-        
+        next(error)
     }
 })
 
+
+//profile
+
+//change password
+
+//activate account
+//remember password
+
+//upload image
+
+//change name/nickname
 
 module.exports = router;
