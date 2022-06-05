@@ -56,6 +56,14 @@ const userSchema = new Schema(
         }
       },
     ],
+    comments: [{
+      // _id: {
+      //     type: Schema.Types.ObjectId,
+      //     ref: "News"
+      // },
+      type: Schema.Types.ObjectId,
+      ref: "Comment"
+  }],
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

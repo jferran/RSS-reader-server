@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const UserModel = require("../models/User.model")
 const FeedModel = require("../models/Feed.model")
+const CommentModel = require("../models/Comment.model")
+const NewsModel = require("../models/News.model")
 //const isAuthenticated = require("../middlewares/isAuthenticated")
 
 // gets all subscribed Feeds
@@ -181,8 +183,8 @@ router.get("/:userID/news/:feedId/markAllAsRead", async (req, res, next) => {
         const user = await UserModel.findOneAndUpdate(
             {
                 _id: userID,
-                "newsList.seed": false,
-                "newsList.feed": feedId
+                // "newsList.seen": false,
+                // "newsList.feed": feedId
               },
               {
                   $set: {
@@ -221,7 +223,8 @@ router.get("/:userID/news/:id/markAsRead", async (req, res, next) => {
 })
 
 //mark as favourite
-router.get("/userID/news/:id/markAsFavourite"), async (req, res, next) => {
+router.get("/:userID/news/:id/markAsFavourite", async (req, res, next) => {
+    const { userID, id } = req.params
     try {
         const user = await UserModel.findOneAndUpdate(
             {
@@ -239,20 +242,44 @@ router.get("/userID/news/:id/markAsFavourite"), async (req, res, next) => {
     } catch (error) {
         next(error)
     }
-}
+})
 
 
 
+//POST /api/user/629b627a0abde8d1ae128aad/news/629b9a562a21411d62a08079/comment
+router.post("/:userID/news/:id/comment", async (req, res, next) => {
+    const { userID, id } = req.params
+    const { comment } = req.body
+    console.log(userID, id, comment)
+    try {
+        const myComment = await CommentModel.create({user: userID, news: id, comment: comment})
+        const user = await UserModel.findByIdAndUpdate(userID, {$addToSet: {comments: myComment._id}})
+        const feed = await NewsModel.findByIdAndUpdate(id, {$addToSet: {comments: myComment._id}})
+        
+        
+        res.json("comment posted")
+    } catch (error) {
+        next(error)
+    }
+})
 
-
-//comment route
-router.get("/userID/news/:id/comment"), async (req, res, next) => {
+//edit comment route
+router.post("/userID/news/:id/comment/edit", async (req, res, next) => {
     try {
         
     } catch (error) {
         
     }
-}
+})
+
+//delete comment route
+router.get("/userID/news/:id/comment/delete", async (req, res, next) => {
+    try {
+        
+    } catch (error) {
+        
+    }
+})
 
 
 module.exports = router;

@@ -16,7 +16,15 @@ const newsSchema = new Schema(
         content: {
             type: String
         },
-        pubDate: Date
+        pubDate: Date,
+        comments: [{
+            // _id: {
+            //     type: Schema.Types.ObjectId,
+            //     ref: "News"
+            // },
+            type: Schema.Types.ObjectId,
+            ref: "Comment"
+        }],
         
     }
 )
