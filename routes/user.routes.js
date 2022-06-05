@@ -47,7 +47,7 @@ router.get("/:userID/feed/:id/subscribe", async (req, res, next) => {
     //const { userID } = req.body
     try {
         const news = await FeedModel.findById(id).select('news')
-        newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
+        newsArrayOfObjects = news.news.map((element)=>{return {'_id': element, 'feed': id}})
         //console.log("arrayofobj:", newsArrayOfObjects)
 
         //not working in one line, so we make 2 queries
@@ -68,6 +68,53 @@ router.get("/:userID/feed/:id/unsubscribe", async (req, res, next) => {
     //const { userID } = req.body
     try {
         const response = await UserModel.findByIdAndUpdate(userID, {$pull: {subscribedFeeds: {_id: id}}}).populate('subscribedFeeds._id')
+
+        res.json(response)
+    } catch (error) {
+        next(error)
+    }
+})
+
+// share feed
+router.get("/:userID/feed/:id/share", async (req, res, next) => {
+    const { userID, id } = req.params
+    //const { userID } = req.body
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "subscribedFeeds._id": id,
+              },
+              {
+                  $set: {
+                      'subscribedFeeds.$.shared': true
+                  }
+              }
+        )
+        const response = await FeedModel.findByIdAndUpdate(id, {$addToSet: {sharedBy: userID}})
+
+        res.json(response)
+    } catch (error) {
+        next(error)
+    }
+})
+//unshare feed
+router.get("/:userID/feed/:id/unshare", async (req, res, next) => {
+    const { userID, id } = req.params
+    //const { userID } = req.body
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "subscribedFeeds._id": id,
+              },
+              {
+                  $set: {
+                      'subscribedFeeds.$.shared': false
+                  }
+              }
+        )
+        const response = await FeedModel.findByIdAndUpdate(id, {$pull: {sharedBy: userID}})
 
         res.json(response)
     } catch (error) {
@@ -102,6 +149,52 @@ router.get("/:userID/news/refresh", async (req, res, next) => {
         next(error)
     }
 
+})
+//mark All as read
+router.get("/:userID/news/markAllAsRead", async (req, res, next) => {
+    const { userID, feedId } = req.params
+    //const { userID } = req.body
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "newsList.seed": false
+              },
+              {
+                  $set: {
+                      'newsList.$[elem].seen': true
+                  }
+              },
+              { "arrayFilters": [{ "elem.seen": false }], "multi": true }
+        )
+        res.json(user)
+    } catch (error) {
+        next(error)
+    }
+})
+
+//mark All as read
+router.get("/:userID/news/:feedId/markAllAsRead", async (req, res, next) => {
+    const { userID, feedId } = req.params
+    //const { userID } = req.body
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "newsList.seed": false,
+                "newsList.feed": feedId
+              },
+              {
+                  $set: {
+                      'newsList.$[elem].seen': true
+                  }
+              },
+              { "arrayFilters": [{ "elem.seen": false, "elem.feed": feedId }], "multi": true }
+        )
+        res.json(user)
+    } catch (error) {
+        next(error)
+    }
 })
 
 //mark as read

@@ -19,6 +19,14 @@ const feedSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "News"
         }],
+        sharedBy: [{
+            // _id: {
+            //     type: Schema.Types.ObjectId,
+            //     ref: "News"
+            // },
+            type: Schema.Types.ObjectId,
+            ref: "User"
+        }],
     }
 )
 //feedSchema.index({ guid: 1}, { unique: true });

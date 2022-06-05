@@ -25,7 +25,11 @@ const userSchema = new Schema(
       feed: {
         type: Schema.Types.ObjectId,
         ref: "Feed"
-      }
+      },
+      shared: {
+        type: Boolean,
+        default: false
+      },
     }],
     newsList: [
       {
@@ -34,6 +38,10 @@ const userSchema = new Schema(
           type: Schema.Types.ObjectId,
           ref: "Feed.news"
           },
+          feed: {
+            type: Schema.Types.ObjectId,
+            ref: "Feed"
+            },
         entry: {
         type: Schema.Types.ObjectId,
         ref: "Feed.news"
