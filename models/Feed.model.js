@@ -27,6 +27,7 @@ const feedSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "User"
         }],
+        favicon: String
     }
 )
 //feedSchema.index({ guid: 1}, { unique: true });

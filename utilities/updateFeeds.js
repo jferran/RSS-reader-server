@@ -8,6 +8,8 @@ const updateFeeds = async () => {
   const allFeeds = await Feed.find();
 
   allFeeds.forEach(async (source) => {
+      console.log(source)
+      try {
     let feed = await parser.parseURL(source.sourceUrl);
     let manyNews = [];
 
@@ -20,7 +22,7 @@ const updateFeeds = async () => {
       });
     });
 
-    try {
+    
       const news = await News.insertMany(
         manyNews,
         { ordered: false },
@@ -34,7 +36,9 @@ const updateFeeds = async () => {
           });
         }
       );
-    } catch (error) {}
+    } catch (error) {
+        
+    }
   });
 };
 
