@@ -190,13 +190,15 @@ router.get("/feed/:id", isAuthenticated, async (req, res, next) => {
         //res.json(response.subscribedFeeds[0])
 
         //res.json(response.subscribedFeeds[0])
-        const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News'}).lean()
-        console.log(response)
+        //const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News'}).lean()
+        const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
+        //console.log(response)
         //res.json(response)
         //const result = response.newsList.filter(news=> String(news._id.feed) === id)
         //response.newsList.forEach((element) => console.log(String(element._id.feed) === id))
         //console.log(result)
         const result = response.newsList.filter(news=> news._id && String(news._id.feed)===id)
+        console.log(result)
         res.json(result)
     } catch (error) {
         next(error)
