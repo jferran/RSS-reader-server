@@ -10,60 +10,64 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     password: {
       type: String,
-      required: true
+      required: true,
     },
-    subscribedFeeds: [{
-      //_id: false,
-      _id: {
-        type: Schema.Types.ObjectId,
-        ref: "Feed"
+    subscribedFeeds: [
+      {
+        //_id: false,
+        _id: {
+          type: Schema.Types.ObjectId,
+          ref: "Feed",
+        },
+        feed: {
+          type: Schema.Types.ObjectId,
+          ref: "Feed",
+        },
+        shared: {
+          type: Boolean,
+          default: false,
+        },
       },
-      feed: {
-        type: Schema.Types.ObjectId,
-        ref: "Feed"
-      },
-      shared: {
-        type: Boolean,
-        default: false
-      },
-    }],
+    ],
     newsList: [
       {
         //_id: false,
         _id: {
           type: Schema.Types.ObjectId,
-          ref: "Feed.news"
-          },
-          feed: {
-            type: Schema.Types.ObjectId,
-            ref: "Feed"
-            },
+          ref: "Feed.news",
+        },
+        feed: {
+          type: Schema.Types.ObjectId,
+          ref: "Feed",
+        },
         entry: {
-        type: Schema.Types.ObjectId,
-        ref: "Feed.news"
+          type: Schema.Types.ObjectId,
+          ref: "Feed.news",
         },
         seen: {
           type: Boolean,
-          default: false
+          default: false,
         },
         favorite: {
           type: Boolean,
-          default: false
-        }
+          default: false,
+        },
       },
     ],
-    comments: [{
-      // _id: {
-      //     type: Schema.Types.ObjectId,
-      //     ref: "News"
-      // },
-      type: Schema.Types.ObjectId,
-      ref: "Comment"
-  }],
+    comments: [
+      {
+        // _id: {
+        //     type: Schema.Types.ObjectId,
+        //     ref: "News"
+        // },
+        type: Schema.Types.ObjectId,
+        ref: "Comment",
+      },
+    ],
   },
   {
     // this second object adds extra properties: `createdAt` and `updatedAt`

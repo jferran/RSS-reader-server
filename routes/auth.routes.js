@@ -40,6 +40,24 @@ router.post("/signup", async (req, res, next) => {
 
 })
 
+//change password
+
+router.patch("/password", async (req, res, next) => {
+    const { password } =req.params
+    try {
+        const salt = await bcryptjs.genSalt(10)
+        const hashPassword = await bcryptjs.hash(password, salt)
+        
+        await UserModel.findByIdAndUpdate(req.payload._id, hashPassword)
+        
+        res.json("todo bien, password cambiado")
+        
+    } catch (error) {
+        next(error)
+    }
+})
+
+
 //POST "/api/auth/login" => verificar las credenciales del usuario y abrirle "sesión"
 router.post("/login", async (req, res, next) => {
     const { email, password } = req.body
@@ -93,6 +111,8 @@ router.get("/verify", isAuthenticated, (req, res, next) => {
     res.json(req.payload)
 
 })
+
+//activate account
 
 
 module.exports = router;

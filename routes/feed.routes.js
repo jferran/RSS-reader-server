@@ -30,6 +30,7 @@ router.post("/", async (req, res, next) => {
 
 router.post("/searchFeedSources", async (req, res, next) => {
     const { sourceUrl } = req.body
+    
 
     const setHttp = (link) =>{
         if (link.search(/^http[s]?\:\/\//) == -1) {
@@ -38,12 +39,13 @@ router.post("/searchFeedSources", async (req, res, next) => {
         return link;
     }
 
-    const urlWithProtocol = setHttp(sourceUrl)
+    
 
     try {
+        const urlWithProtocol = setHttp(sourceUrl)
         let htmlString = (await axios.get(urlWithProtocol)).data
         
-        let response = {}//{ source: urlWithProtocol }
+        let response = []//{ source: urlWithProtocol }
         let $ = cheerio.load(htmlString)
         
         let title
@@ -55,6 +57,7 @@ router.post("/searchFeedSources", async (req, res, next) => {
             let links = $('link[type=application/rss+xml]'); //jquery get all hyperlinks
             $(links).each(function(i, link){
                 title = $(link).attr('title')
+                //response[i] = {'title': title, 'url': url.resolve(urlWithProtocol, $(link).attr('href'))}
                 response[i] = {'title': title, 'url': url.resolve(urlWithProtocol, $(link).attr('href'))}
               });
         }
