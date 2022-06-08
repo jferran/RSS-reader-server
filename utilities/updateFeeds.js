@@ -17,6 +17,8 @@ const updateFeeds = async () => {
       manyNews.push({
         content: item.content,
         feed: source._id,
+        title: item.title,
+        link: item.link,
         guid: item.guid,
         pubDate: item.pubDate
       });

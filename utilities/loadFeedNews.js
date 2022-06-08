@@ -16,7 +16,7 @@ const loadNews = async () =>{
             //Here we should add the item to our Feed news model
             //We have 2 possibilities:
             //https://www.educative.io/edpresso/how-to-create-one-or-many-documents-at-once-in-mongoose
-            manyNews.push({feed: source._id, guid: item.guid, content: item.content})
+            manyNews.push({feed: source._id, guid: item.guid, content: item.content, title: item.title, link: item.link})
             //manyNews.push({_id: { guid: item.guid}, content: item.content, feed: source._id, guid: item.guid})
             //manyNews.push({content: item.content, feed: source._id, guid: item.guid})
             //1. Our Feed object, search if Items exist in the Array, and Add them

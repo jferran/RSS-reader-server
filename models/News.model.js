@@ -12,6 +12,8 @@ const newsSchema = new Schema(
             //unique: true
         },
             //unique: true
+        title: String,
+        link: String,
         
         content: {
             type: String

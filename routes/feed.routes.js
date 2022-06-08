@@ -5,10 +5,12 @@ const url = require('url');
 const Feed = require("../models/Feed.model");
 const updateFeeds = require("../utilities/updateFeeds")
 const router = require("express").Router();
+const Parser = require('rss-parser')
 //const isAuthenticated = require("../middlewares/isAuthenticated")
 
 router.get("/", async (req, res, next) =>{
     try {
+        console.log("refresh")
         const response = await Feed.find()
         updateFeeds()
         res.json(response)
@@ -92,6 +94,85 @@ router.post("/searchFeedSources", async (req, res, next) => {
         next(error)
     }
 })
+
+
+router.post("/searchFeedSources2", async (req, res, next) => {
+    const { sourceUrl } = req.body
+    // let parser = new Parser();
+    // let feed = await parser.parseURL(sourceUrl)
+    // console.log("feed: ", feed)
+    
+
+    const setHttp = (link) =>{
+        if (link.search(/^http[s]?\:\/\//) == -1) {
+            link = 'https://' + link;
+        }
+        return link;
+    }
+
+    
+
+    try {
+        const urlWithProtocol = setHttp(sourceUrl)
+        let htmlString = (await axios.get(urlWithProtocol)).data
+        
+        let response = []//{ source: urlWithProtocol }
+        let $ = cheerio.load(htmlString)
+        
+        let title
+        if($("body").children(":first").prop("tagName") === 'RSS'){
+            //We have an RSS file,
+            title = $("title:first").text().replace("<![CDATA[", "").replace("]]>", "")
+            response[0] = {'title': title, 'url': urlWithProtocol}
+        }else{
+            let links = $('link[type=application/rss+xml]'); //jquery get all hyperlinks
+            $(links).each(async function(i, link){
+                console.log(urlWithProtocol+$(link).attr('href'))
+                htmlString = await axios.get((urlWithProtocol+$(link).attr('href')))
+                $ = cheerio.load(htmlString.data)
+                title = $("title:first").text().replace("<![CDATA[", "").replace("]]>", "")
+                
+                //title = $(link).attr('title')
+                //response[i] = {'title': title, 'url': url.resolve(urlWithProtocol, $(link).attr('href'))}
+
+
+                response[i] = {'title': title, 'url': (urlWithProtocol+$(link).attr('href'))}
+                
+              });
+              console.log(response)
+        }
+
+        
+
+        const getFavicon = () =>{
+            let favicon = undefined;
+            let links = $("link");
+            for (let i = 0; i < links.length; i++)
+            {
+                if(($(links[i]).attr("rel") == "icon")||($(links[i]).attr("rel") == "shortcut icon"))
+                {
+                    favicon = $(links[i]).attr("href");
+                }
+            }
+            if (!favicon) {
+                const domain = (new URL(sourceUrl))
+                const host = setHttp(domain.hostname)
+                favicon = `https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${host}&size=128`
+            }
+            return favicon;        
+        }
+        const favicon = getFavicon();
+        
+        for (const key in response) {
+            response[key]['favicon']=favicon
+        }
+
+        res.json(response)
+    } catch (error) {
+        next(error)
+    }
+})
+
 
 router.get("/:id", async (req, res, next) => {
     const { id } = req.params

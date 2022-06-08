@@ -4,6 +4,7 @@ const FeedModel = require("../models/Feed.model")
 const CommentModel = require("../models/Comment.model")
 const NewsModel = require("../models/News.model")
 const isAuthenticated = require("../middlewares/isAuthenticated")
+const Parser = require('rss-parser')
 //const isAuthenticated = require("../middlewares/isAuthenticated")
 
 // gets all subscribed Feeds
@@ -25,12 +26,26 @@ router.get("/feed/all",isAuthenticated, async (req, res, next) => {
         //.populate('subscribedFeeds.feed')
         //console.log("feed/all",response.subscribedFeeds)
         //res.json(response.subscribedFeeds)
-        const response = await UserModel.findById(req.payload._id).select('newsList').populate({path: 'newsList._id', model: 'News'})
+        //const response = await UserModel.findById(req.payload._id).select('newsList').populate({path: 'newsList._id', model: 'News'})
+        //const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
+        const response = await UserModel.findById(req.payload._id)
+        .select('newsList')
+        .populate({
+            path: 'newsList._id', model: 'News', 
+            populate : {
+                path: 'feed', model: 'Feed', 
+                select: 'name sourceUrl'
+            }})
+        .populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}})
+        .lean()
         //temporal para arreglar fallo
         const result = response.newsList.filter(news=> news._id)
 
         //console.log(result)
         //res.json(response.newsList)
+        result.sort(function(a,b){
+            return b._id.pubDate - a._id.pubDate
+        })
         res.json(result)
     } catch (error) {
         next(error)
@@ -42,11 +57,14 @@ router.get("/feed/favourites", isAuthenticated, async(req, res, next)=>{
     console.log("/feed/favourites")
     try {
         //const response = await UserModel.findById(req.payload._id).select('newsList').populate({path: 'subscribedFeeds._id', populate: {path: 'news', model: 'News'}}).lean()
-        const response = await UserModel.findById(req.payload._id).select('newsList').populate({path: 'newsList._id', model: 'News'})//.populate({path: 'subscribedFeeds._id', populate: {path: 'news', model: 'News'}}).lean()
         //const response = await UserModel.find({_id: req.payload._id, "newsList.favorite": true}, {'newsList.$': 1}).lean()
-        console.log(response)
+        //const response = await UserModel.findById(req.payload._id).select('newsList').populate({path: 'newsList._id', model: 'News'})//.populate({path: 'subscribedFeeds._id', populate: {path: 'news', model: 'News'}}).lean()
+        //console.log(response)
+        const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
         const result = response.newsList.filter(news=> news.favorite)
-        console.log(result)
+        result.sort(function(a,b){
+            return b._id.pubDate - a._id.pubDate
+        })
         res.json(result)
     } catch (error) {
         next(error)
@@ -58,20 +76,30 @@ router.post("/feed/createOrFindAndSubscribe", isAuthenticated, async (req, res, 
     const { name, sourceUrl, favicon } = req.body
     try {
         let newsArrayOfObjects = []
-        let feed = await FeedModel.findOne({sourceUrl: sourceUrl}).select('news')
+        let feed = await FeedModel.findOne({sourceUrl: sourceUrl})
         if (!feed) {
-            feed = await FeedModel.create({name, sourceUrl})
+            let parser = new Parser()
+            let parsedFeed = await parser.parseURL(sourceUrl)
+            //feed = await FeedModel.create({name, sourceUrl})
+            feed = await FeedModel.create({name: parsedFeed.title, sourceUrl})
         }//else newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element, 'feed': id}})
         newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element._id, 'feed': element._id}})
         await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
         await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
         //await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
-        res.json("subscribed")
+        console.log(feed)
+        res.json(feed)
     } catch (error) {
         next(error)
     }
 })
 
+router.post("feed/searchFeedSources", isAuthenticated, async (req, res, next) => {
+    const { sourceUrl } = req.body
+
+
+
+})
 
 
 
@@ -157,6 +185,18 @@ router.get("/feed/:id/unshare", isAuthenticated,async (req, res, next) => {
         next(error)
     }
 })
+//returns the name of a feed
+router.get("/feed/:id/name", isAuthenticated, async (req, res, next) => {
+    const {id} = req.params
+    try {
+        const response = await FeedModel.findById(id).select('name')
+        console.log(response)
+        res.json(response)
+    } catch (error) {
+        
+    }
+})
+
 
 //gets a feed with all news
 router.get("/feed/:id", isAuthenticated, async (req, res, next) => {
@@ -166,48 +206,36 @@ router.get("/feed/:id", isAuthenticated, async (req, res, next) => {
     try {
         //https://www.spektor.dev/filtering-values-in-nested-arrays-mongodb/
 
-        //const news = await FeedModel.findById(id).select('news')
-
-
-        //const response = await UserModel.findById(userID, {subscribedFeeds: {$elemMatch: {feed: id}}, projection:{subscribedFeeds: 1}}).populate('subscribedFeeds.feed').lean()
-
-        //const response = await UserModel.findById(userID, {subscribedFeeds: {$elemMatch: {feed: id}}, projection:{subscribedFeeds: 1}}).populate('subscribedFeeds.feed').lean()
-        const response2 = await UserModel.findById(userID, {subscribedFeeds: {$elemMatch: {feed: id}}}).populate({path: 'subscribedFeeds._id', populate: {path: 'news', model: 'News'}}).lean()
-        //this is wrong. We want our news
-        //const response = await UserModel.findById(userID, {subscribedFeeds: {$elemMatch: {feed: id}}}).populate({path: 'subscribedFeeds._id', populate: {path: 'news', model: 'News'}}).lean()
-
-        //const test = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: {entry: id}}})
-        //const response = await UserModel.findById(userID, 'subscribedFeeds.feed').populate('subscribedFeeds.feed')
-        //const response = await UserModel.findById(userID).select('subscribedFeeds')
-        //const response = await UserModel.findById(userID, {projection: {subscribedFeeds: 1}})
+        // const response = await UserModel.findById(req.payload._id)
+        // .select('newsList')
+        // .populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
         
-
-        //.populate('subscribedFeeds.feed', 'name')
-        //.projection({{"subscribedFeeds.feed": '62994d4685afac2e514a3777'}})
-        //console.log(response.subscribedFeeds[0])
-        //res.json(response.subscribedFeeds[0].feed)
-        //works
-        //res.json(response.subscribedFeeds[0])
-
-        //res.json(response.subscribedFeeds[0])
-        //const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News'}).lean()
-        const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
-        //console.log(response)
-        //res.json(response)
-        //const result = response.newsList.filter(news=> String(news._id.feed) === id)
-        //response.newsList.forEach((element) => console.log(String(element._id.feed) === id))
-        //console.log(result)
-        const result = response.newsList.filter(news=> news._id && String(news._id.feed)===id)
-        console.log(result)
-        res.json(result)
+        const response = await UserModel.findById(req.payload._id)
+        .select('newsList')
+        .populate({
+            path: 'newsList._id', model: 'News', 
+            populate : {
+                path: 'feed', model: 'Feed', 
+                select: 'name sourceUrl'
+            }})
+        .populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}})
+        .lean()
+        
+        // const result = response.newsList.filter(news=> news._id && String(news._id.feed)===id)
+        const filteredResponse = response.newsList.filter(news=> news._id && String(news._id.feed._id)===id)
+        filteredResponse.sort(function(a,b){
+            return b._id.pubDate - a._id.pubDate
+        })
+        console.log(response.newsList)
+        res.json(filteredResponse)
     } catch (error) {
         next(error)
     }
 })
 
 //refresh news route
-router.get("/:userID/news/refresh", async (req, res, next) => {
-    const { userID } = req.params
+router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
+    const userID = req.payload._id
     try {
         
         const subscriptions = await UserModel.findById(userID).select('subscribedFeeds').lean()
@@ -327,6 +355,31 @@ router.get("/news/:id/markAsFavourite", isAuthenticated,async (req, res, next) =
     }
 })
 
+//unmark as favourite
+router.get("/news/:id/unmarkAsFavourite", isAuthenticated,async (req, res, next) => {
+    const { id } = req.params
+    const userID = req.payload._id
+    try {
+        const user = await UserModel.findOneAndUpdate(
+            {
+                _id: userID,
+                "newsList._id": id,
+              },
+              {
+                  $set: {
+                      'newsList.$.favorite': false
+                  }
+              }
+              
+        )
+
+        res.json(user)
+    } catch (error) {
+        next(error)
+    }
+})
+
+
 //get favourites
 
 
@@ -342,8 +395,8 @@ router.post("/news/:id/comment", isAuthenticated, async (req, res, next) => {
         const user = await UserModel.findByIdAndUpdate(userID, {$addToSet: {comments: myComment._id}})
         const feed = await NewsModel.findByIdAndUpdate(id, {$addToSet: {comments: myComment._id}})
         
-        
-        res.json("comment posted")
+        console.log("myComment: ", myComment)
+        res.json(myComment)
     } catch (error) {
         next(error)
     }
