@@ -60,7 +60,17 @@ router.get("/feed/favourites", isAuthenticated, async(req, res, next)=>{
         //const response = await UserModel.find({_id: req.payload._id, "newsList.favorite": true}, {'newsList.$': 1}).lean()
         //const response = await UserModel.findById(req.payload._id).select('newsList').populate({path: 'newsList._id', model: 'News'})//.populate({path: 'subscribedFeeds._id', populate: {path: 'news', model: 'News'}}).lean()
         //console.log(response)
-        const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
+        //const response = await UserModel.findById(req.payload._id).populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}}).lean()
+        const response = await UserModel.findById(req.payload._id)
+        .select('newsList')
+        .populate({
+            path: 'newsList._id', model: 'News', 
+            populate : {
+                path: 'feed', model: 'Feed', 
+                select: 'name sourceUrl'
+            }})
+        .populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}})
+        .lean()
         const result = response.newsList.filter(news=> news.favorite)
         result.sort(function(a,b){
             return b._id.pubDate - a._id.pubDate
@@ -92,6 +102,19 @@ router.post("/feed/createOrFindAndSubscribe", isAuthenticated, async (req, res, 
     } catch (error) {
         next(error)
     }
+})
+
+router.get("/feed/sharedByUsers", isAuthenticated, async (req, res, next) =>{
+    const userID = req.payload._id
+    try {
+        const feeds = await FeedModel.find({sharedBy: { $exists: true, $ne: []}}).select('name sourceUrl sharedBy')
+        console.log(feeds) 
+        res.json(feeds)
+    } catch (error) {
+        next(error)
+    }
+    
+
 })
 
 router.post("feed/searchFeedSources", isAuthenticated, async (req, res, next) => {
