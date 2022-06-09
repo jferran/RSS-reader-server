@@ -95,9 +95,17 @@ router.post("/feed/createOrFindAndSubscribe", isAuthenticated, async (req, res, 
             feed = await FeedModel.create({name: parsedFeed.title, sourceUrl})
         }//else newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element, 'feed': id}})
         newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element._id, 'feed': element._id}})
+        //we want to exclude duplicates EXCLUDEDUPLICATES
+        let user = await UserModel.findById(userID).select('newsList').lean()
+        let newsFromUser = user.newsList
+        const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
+        const combined = [
+            ...newsFromUser,
+            newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
+        ]
         await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
-        await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
-        //await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+        await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+        
         console.log(feed)
         res.json(feed)
     } catch (error) {
@@ -139,12 +147,16 @@ router.get("/feed/:id/subscribe", isAuthenticated, async (req, res, next) => {
         newsArrayOfObjects = news.news.map((element)=>{return {'_id': element, 'feed': id}})
         console.log("arrayofobj:", newsArrayOfObjects)
 
-        //not working in one line, so we make 2 queries
-        //const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id, newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
-        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
-        const response2 = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
-        //.populate('subscribedFeeds.feed', 'name')
 
+        let user = await UserModel.findById(userID).select('newsList').lean()
+        let newsFromUser = user.newsList
+        const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
+        const combined = [
+            ...newsFromUser,
+            newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
+        ]
+        await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
+        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
         res.json(response)
     } catch (error) {
         next(error)
@@ -270,7 +282,17 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
         subscriptions.subscribedFeeds.forEach(async (subscription) => {
             const news = await FeedModel.findById(subscription._id).select('news').lean()
             const newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
-            await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+            //await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+
+            let user = await UserModel.findById(userID).select('newsList').lean()
+            let newsFromUser = user.newsList
+            const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
+            const combined = [
+                ...newsFromUser,
+                newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
+            ]
+            await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
+            await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
         })
         
         //const news = await FeedModel.findById(id).select('news')
