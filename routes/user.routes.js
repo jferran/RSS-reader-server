@@ -287,6 +287,9 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
             //await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
 
             let user = await UserModel.findById(userID).select('newsList').lean()
+            //WE HAVE TO SKIP THE PROCESS IF NEWSLIST IS EMPTY
+            console.log("USER.NEWSLIST", user.newsList)
+            if(user.newsList){
             let newsFromUser = user.newsList
             const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
             const combined = [
@@ -296,7 +299,10 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
             console.log("user.newsList:", user.newsList)
             console.log("userNewsIDs",userNewsIDs.length)
             //await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
-            if(userNewsIDs.length)await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+            
+            //if(userNewsIDs.length)await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+             await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+            }
             else await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
         })
         
