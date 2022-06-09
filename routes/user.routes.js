@@ -10,9 +10,10 @@ const Parser = require('rss-parser')
 // gets all subscribed Feeds
 router.get("/feed/",isAuthenticated, async (req, res, next) => {
     try {
-        const response = await UserModel.findById(req.payload._id).select('subscribedFeeds').populate('subscribedFeeds.feed', 'name').lean()
+        const response = await UserModel.findById(req.payload._id).select('subscribedFeeds').populate('subscribedFeeds.feed', 'name sourceUrl').lean()
         //.populate('subscribedFeeds.feed')
-        console.log("/feed/",response)
+        //console.log("/feed/",response)
+        console.log("subscribed feed: ", response.subscribedFeeds)
         res.json(response.subscribedFeeds)
     } catch (error) {
         next(error)
@@ -128,8 +129,10 @@ router.post("feed/searchFeedSources", isAuthenticated, async (req, res, next) =>
 
 
 
-router.get("/:userID/feed/:id/subscribe", async (req, res, next) => {
-    const { userID, id } = req.params
+router.get("/feed/:id/subscribe", isAuthenticated, async (req, res, next) => {
+    const { id } = req.params
+    console.log("/feed/id/subs   id=", id)
+    const userID = req.payload._id
     //const { userID } = req.body
     try {
         const news = await FeedModel.findById(id).select('news')
@@ -263,7 +266,7 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
         
         const subscriptions = await UserModel.findById(userID).select('subscribedFeeds').lean()
         let newNews = []
-        console.log("subscriptions", subscriptions)
+        //console.log("subscriptions", subscriptions)
         subscriptions.subscribedFeeds.forEach(async (subscription) => {
             const news = await FeedModel.findById(subscription._id).select('news').lean()
             const newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
@@ -332,8 +335,9 @@ router.get("/:userID/news/:feedId/markAllAsRead", async (req, res, next) => {
 })
 
 //mark as read
-router.get("/:userID/news/:id/markAsRead", async (req, res, next) => {
-    const { userID, id } = req.params
+router.get("/news/:id/markAsRead", isAuthenticated,async (req, res, next) => {
+    const { id } = req.params
+    const userID = req.payload._id
     //const { userID } = req.body
     try {
         const user = await UserModel.findOneAndUpdate(
