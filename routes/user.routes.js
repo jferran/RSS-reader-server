@@ -291,7 +291,7 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
                 ...newsFromUser,
                 newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
             ]
-            await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
+            //await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
             await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
         })
         
