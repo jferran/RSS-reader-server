@@ -12,8 +12,10 @@ router.get("/feed/",isAuthenticated, async (req, res, next) => {
     try {
         const response = await UserModel.findById(req.payload._id).select('subscribedFeeds').populate('subscribedFeeds.feed', 'name sourceUrl').lean()
         //.populate('subscribedFeeds.feed')
-        //console.log("/feed/",response)
-        console.log("subscribed feed: ", response.subscribedFeeds)
+        // console.log("/feed/",response)
+        // console.log("subscribed feed: ", response.subscribedFeeds)
+
+        
         res.json(response.subscribedFeeds)
     } catch (error) {
         next(error)
