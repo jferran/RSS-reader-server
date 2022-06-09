@@ -15,7 +15,7 @@ router.get("/feed/",isAuthenticated, async (req, res, next) => {
         // console.log("/feed/",response)
         // console.log("subscribed feed: ", response.subscribedFeeds)
 
-        
+        console.log("get /feed/ subscribedFeeds", response.subscribedFeeds)
         res.json(response.subscribedFeeds)
     } catch (error) {
         next(error)
@@ -42,13 +42,15 @@ router.get("/feed/all",isAuthenticated, async (req, res, next) => {
         .populate({path: 'newsList._id', model: 'News', populate : {path: 'comments', model: 'Comment', populate: {path: 'user', model: 'User'}}})
         .lean()
         //temporal para arreglar fallo
-        const result = response.newsList.filter(news=> news._id)
-
-        //console.log(result)
-        //res.json(response.newsList)
-        result.sort(function(a,b){
-            return b._id.pubDate - a._id.pubDate
-        })
+        let result
+            if(response.newsList && response.newsList.length > 0){
+                result = response.newsList.filter(news=> news._id)
+                result.sort(function(a,b){
+                    return b._id.pubDate - a._id.pubDate
+                })
+            }
+        else result = []
+            
         res.json(result)
     } catch (error) {
         next(error)
@@ -99,15 +101,22 @@ router.post("/feed/createOrFindAndSubscribe", isAuthenticated, async (req, res, 
         newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element._id, 'feed': element._id}})
         //we want to exclude duplicates EXCLUDEDUPLICATES
         let user = await UserModel.findById(userID).select('newsList').lean()
-        let newsFromUser = user.newsList
-        const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
-        const combined = [
-            ...newsFromUser,
-            newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
-        ]
-        await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
-        await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
-        
+        if(user.newsList){
+            let newsFromUser = user.newsList
+            const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
+            const combined = [
+                ...newsFromUser,
+                newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
+            ]
+            console.log("user.newsList:", user.newsList)
+            console.log("userNewsIDs",userNewsIDs.length)
+            //await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
+            
+            //if(userNewsIDs.length)await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+             await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+            }
+            else await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+
         console.log(feed)
         res.json(feed)
     } catch (error) {
@@ -145,20 +154,29 @@ router.get("/feed/:id/subscribe", isAuthenticated, async (req, res, next) => {
     const userID = req.payload._id
     //const { userID } = req.body
     try {
+        //we have to check that the user hasn't got the feed already, otherwise it will be duplicated due to Mongoose
+        let user = await UserModel.findById(userID).select('newsList subscribedFeeds').lean()
+        if (user.subscribedFeeds.some( e => String(e._id) === id)) console.log('duplicated')
+        else await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
+
+
+
         const news = await FeedModel.findById(id).select('news')
         newsArrayOfObjects = news.news.map((element)=>{return {'_id': element, 'feed': id}})
         console.log("arrayofobj:", newsArrayOfObjects)
 
+        let response
+        if(user.newsList){
+            let newsFromUser = user.newsList
+            const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
+            const combined = [
+                ...newsFromUser,
+                newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
+            ]
+            response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+        }
+        else response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
 
-        let user = await UserModel.findById(userID).select('newsList').lean()
-        let newsFromUser = user.newsList
-        const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
-        const combined = [
-            ...newsFromUser,
-            newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
-        ]
-        await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: id, feed: id}}}).populate('subscribedFeeds._id')
-        const response = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
         res.json(response)
     } catch (error) {
         next(error)
@@ -281,31 +299,32 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
         const subscriptions = await UserModel.findById(userID).select('subscribedFeeds').lean()
         let newNews = []
         //console.log("subscriptions", subscriptions)
-        subscriptions.subscribedFeeds.forEach(async (subscription) => {
-            const news = await FeedModel.findById(subscription._id).select('news').lean()
-            const newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
-            //await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+        if(subscriptions.subscribedFeeds && subscriptions.subscribedFeeds.length > 0){
+            subscriptions.subscribedFeeds.forEach(async (subscription) => {
+                const news = await FeedModel.findById(subscription._id).select('news').lean()
+                const newsArrayOfObjects = news.news.map((element)=>{return {'_id': element}})
+                //await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
 
-            let user = await UserModel.findById(userID).select('newsList').lean()
-            //WE HAVE TO SKIP THE PROCESS IF NEWSLIST IS EMPTY
-            console.log("USER.NEWSLIST", user.newsList)
-            if(user.newsList){
-            let newsFromUser = user.newsList
-            const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
-            const combined = [
-                ...newsFromUser,
-                newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
-            ]
-            console.log("user.newsList:", user.newsList)
-            console.log("userNewsIDs",userNewsIDs.length)
-            //await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
-            
-            //if(userNewsIDs.length)await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
-             await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
-            }
-            else await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
-        })
-        
+                let user = await UserModel.findById(userID).select('newsList').lean()
+                //WE HAVE TO SKIP THE PROCESS IF NEWSLIST IS EMPTY
+                console.log("USER.NEWSLIST", user.newsList)
+                if(user.newsList){
+                let newsFromUser = user.newsList
+                const userNewsIDs = new Set(newsFromUser.map(({_id})=>_id))
+                const combined = [
+                    ...newsFromUser,
+                    newsArrayOfObjects.filter(({_id})=>!userNewsIDs.has(_id))
+                ]
+                console.log("user.newsList:", user.newsList)
+                console.log("userNewsIDs",userNewsIDs.length)
+                //await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
+                
+                //if(userNewsIDs.length)await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+                await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
+                }
+                else await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: newsArrayOfObjects}}).populate('subscribedFeeds._id')
+            })
+        }
         //const news = await FeedModel.findById(id).select('news')
         
         //console.log("arrayofobj:", newsArrayOfObjects)
