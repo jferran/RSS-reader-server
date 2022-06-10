@@ -8,7 +8,7 @@ const updateFeeds = async () => {
   const allFeeds = await Feed.find();
 
   allFeeds.forEach(async (source) => {
-      console.log(source)
+      //console.log(source)
       try {
     let feed = await parser.parseURL(source.sourceUrl);
     let manyNews = [];
