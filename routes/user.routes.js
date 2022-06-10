@@ -322,9 +322,9 @@ router.get("/news/refresh", isAuthenticated,async (req, res, next) => {
                     // ]
                     
                     //if(userNewsIDs.length)await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: combined}}).populate('subscribedFeeds._id')
-                    console.log("we add from", subscription._id, "combined: ", combined.length, "newsArr: ", newsArrayOfObjects.length)
+                    //console.log("we add from", subscription._id, "combined: ", combined.length, "newsArr: ", newsArrayOfObjects.length)
                     console.log(newsArrayOfObjects)
-                    console.log(combined)
+                    //console.log(combined)
                     const test = await UserModel.findByIdAndUpdate(userID, {$addToSet: {newsList: filteredNews}}).populate('subscribedFeeds._id')
                     //console.log(test)
                 }
