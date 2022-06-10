@@ -481,9 +481,10 @@ router.post("/news/:id/comment", isAuthenticated, async (req, res, next) => {
         const myComment = await CommentModel.create({user: userID, news: id, comment: comment})
         const user = await UserModel.findByIdAndUpdate(userID, {$addToSet: {comments: myComment._id}})
         const feed = await NewsModel.findByIdAndUpdate(id, {$addToSet: {comments: myComment._id}})
+        const newComment = await CommentModel.findById(myComment._id).populate('user')
         
         console.log("myComment: ", myComment)
-        res.json(myComment)
+        res.json(newComment)
     } catch (error) {
         next(error)
     }
