@@ -97,7 +97,10 @@ router.post("/feed/createOrFindAndSubscribe", isAuthenticated, async (req, res, 
             let parsedFeed = await parser.parseURL(sourceUrl)
             //feed = await FeedModel.create({name, sourceUrl})
             feed = await FeedModel.create({name: parsedFeed.title, sourceUrl})
-        }//else newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element, 'feed': id}})
+        }//else añadir feed encontrado
+        else await UserModel.findByIdAndUpdate(userID, {$addToSet: {subscribedFeeds: {_id: feed._id, feed: feed._id}}}).populate('subscribedFeeds._id')
+
+        //else newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element, 'feed': id}})
         newsArrayOfObjects = feed.news.map((element)=>{return {'_id': element._id, 'feed': element._id}})
         //we want to exclude duplicates EXCLUDEDUPLICATES
         let user = await UserModel.findById(userID).select('newsList').lean()
@@ -495,8 +498,9 @@ router.post("/:userID/comments/:id/edit", async (req, res, next) => {
 })
 
 //delete comment route
-router.delete("/:userID/comments/:id", async (req, res, next) => {
-    const { userID, id } = req.params
+router.delete("/comments/:id", isAuthenticated,async (req, res, next) => {
+    const { id } = req.params
+    const userID = req.payload._id
     try {
         const myComment = await CommentModel.findOneAndDelete({_id: id, user: userID}).populate('news')
         const user = await UserModel.findByIdAndUpdate(userID, {$pull: {comments: myComment._id}})
