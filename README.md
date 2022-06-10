@@ -1,7 +1,5 @@
 # RSS-reader-server
 
-# RSS-Reader-client
-
 Nodejs REST API server which works with Mongodb as DB to fetch RSS sources, and users can save their subscriptions and comment on the news.
 
 ## Available Scripts
